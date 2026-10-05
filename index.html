@@ -8,6 +8,16 @@
         content="width=device-width, initial-scale=1.0"
     >
 
+    <meta
+        name="apple-mobile-web-app-capable"
+        content="yes"
+    >
+
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="default"
+    >
+
     <title>Pickleball Live Court Scheduler</title>
 
     <style>
@@ -31,7 +41,7 @@
 
         h1 {
             margin: 0 0 8px;
-            font-size: 38px;
+            font-size: 36px;
         }
 
         h2,
@@ -88,10 +98,10 @@
         input,
         select,
         button {
-            min-height: 43px;
+            min-height: 44px;
             padding: 10px;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 16px;
         }
 
         input,
@@ -276,6 +286,13 @@
             color: #7a5200;
         }
 
+        .save-status {
+            margin-top: 10px;
+            color: #087f5b;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
         .minimum-reached {
             color: #087f5b;
             font-weight: bold;
@@ -340,7 +357,7 @@
             }
 
             h1 {
-                font-size: 29px;
+                font-size: 28px;
             }
 
             .panel {
@@ -404,11 +421,9 @@
     <h1>🏓 Pickleball Live Court Scheduler</h1>
 
     <p class="subtitle">
-        Fair live-court rotation with balanced teams,
-        waiting-player priority, and minimized repeat pairings.
+        Fair live-court rotation with automatic saving,
+        balanced teams, and minimized repeat pairings.
     </p>
-
-    <!-- EVENT SETTINGS -->
 
     <section
         class="panel no-print"
@@ -482,13 +497,10 @@
         </label>
 
         <p class="help">
-            Minimum games is a fairness target, not a stopping
-            limit. The scheduler continues until End Event is
-            selected.
+            Minimum games is a fairness target only.
+            Scheduling continues until End Event is selected.
         </p>
     </section>
-
-    <!-- PLAYER ENTRY -->
 
     <section
         class="panel no-print"
@@ -538,8 +550,6 @@
 
         <div id="message"></div>
     </section>
-
-    <!-- EVENT BUTTONS -->
 
     <section class="panel no-print">
 
@@ -595,15 +605,13 @@
 
         </div>
 
-        <p class="help">
-            When a court finishes, select Complete & Assign Next
-            on that court. A new fair match will be assigned
-            immediately if four players are available.
-        </p>
-
+        <div
+            id="saveStatus"
+            class="save-status"
+        >
+            No active event to save.
+        </div>
     </section>
-
-    <!-- EVENT SUMMARY -->
 
     <section class="panel">
 
@@ -616,10 +624,8 @@
             Enter players and select Start Event.
         </div>
 
-        <div
-            id="summaryGrid"
-            class="summary-grid"
-        >
+        <div class="summary-grid">
+
             <div class="summary-card">
                 <span
                     class="summary-number"
@@ -627,6 +633,7 @@
                 >
                     0 / 0
                 </span>
+
                 Players Reached Target
             </div>
 
@@ -637,6 +644,7 @@
                 >
                     0
                 </span>
+
                 Active Courts
             </div>
 
@@ -647,6 +655,7 @@
                 >
                     0
                 </span>
+
                 Completed Matches
             </div>
 
@@ -657,8 +666,10 @@
                 >
                     0-0
                 </span>
+
                 Scheduled Game Range
             </div>
+
         </div>
 
         <div class="progress-track">
@@ -670,8 +681,6 @@
         </div>
     </section>
 
-    <!-- LIVE COURTS -->
-
     <section class="panel">
 
         <h2>Live Courts</h2>
@@ -680,10 +689,7 @@
             id="courtGrid"
             class="court-grid"
         ></div>
-
     </section>
-
-    <!-- WAITING QUEUE -->
 
     <section class="panel">
 
@@ -691,19 +697,15 @@
 
         <p class="help">
             Players with fewer games and longer waiting time
-            appear first. The exact next match also depends on
-            skill balance and repeat history.
+            appear first.
         </p>
 
         <div id="waitingQueue">
             <p class="help">
-                Waiting order will appear after the event starts.
+                Waiting order will appear when the event starts.
             </p>
         </div>
-
     </section>
-
-    <!-- PLAYER STATUS -->
 
     <section class="panel">
 
@@ -711,13 +713,10 @@
 
         <div id="playerStatus">
             <p class="help">
-                Player totals will appear after the event starts.
+                Player totals will appear when the event starts.
             </p>
         </div>
-
     </section>
-
-    <!-- MATCH HISTORY -->
 
     <section class="panel">
 
@@ -728,10 +727,7 @@
                 Completed matches will appear here.
             </p>
         </div>
-
     </section>
-
-    <!-- PARTNER AND OPPONENT HISTORY -->
 
     <section class="panel">
 
@@ -760,12 +756,14 @@
             </div>
 
         </div>
-
     </section>
 
 </div>
 
 <script>
+    const STORAGE_KEY =
+        "pickleballLiveSchedulerEvent";
+
     let nextPlayerId = 1;
     let eventState = null;
 
@@ -782,10 +780,15 @@
         );
     }
 
-    function formatTime(date) {
-        if (!date) {
+    function formatTime(dateValue) {
+        if (!dateValue) {
             return "";
         }
+
+        const date =
+            dateValue instanceof Date
+                ? dateValue
+                : new Date(dateValue);
 
         return date.toLocaleTimeString(
             [],
@@ -1088,7 +1091,6 @@
                     fourPlayers[3]
                 ]
             ],
-
             [
                 [
                     fourPlayers[0],
@@ -1099,7 +1101,6 @@
                     fourPlayers[3]
                 ]
             ],
-
             [
                 [
                     fourPlayers[0],
@@ -1184,8 +1185,6 @@
                     teamASkill,
                     teamBSkill,
                     skillDifference,
-                    partnerRepeats,
-                    opponentRepeats,
                     score
                 };
             });
@@ -1242,112 +1241,45 @@
         const availablePlayers =
             getAvailablePlayersSorted();
 
-        if (
-            availablePlayers.length < 4
-        ) {
+        if (availablePlayers.length < 4) {
             return null;
         }
 
         const lowestGameCount =
-            availablePlayers[0]
-                .scheduledGames;
+            availablePlayers[0].scheduledGames;
 
-        /*
-            Players who are more than one game
-            behind other players receive strict
-            selection priority.
-        */
-
-        const priorityPlayers =
+        let candidatePool =
             availablePlayers.filter(
                 player =>
                     player.scheduledGames <=
                     lowestGameCount + 1
             );
 
-        let candidatePool = [
-            ...priorityPlayers
-        ];
-
-        /*
-            At least four candidates are required.
-            Additional players are added only when
-            needed to form a complete match.
-        */
-
         if (candidatePool.length < 4) {
-            for (
-                const player
-                of availablePlayers
-            ) {
-                if (
-                    !candidatePool.includes(
-                        player
-                    )
-                ) {
-                    candidatePool.push(
-                        player
-                    );
-                }
-
-                if (
-                    candidatePool.length >= 4
-                ) {
-                    break;
-                }
-            }
+            candidatePool =
+                availablePlayers.slice(
+                    0,
+                    4
+                );
         }
-
-        /*
-            Limit the search pool so the browser
-            remains responsive when many players
-            are entered.
-        */
 
         candidatePool =
             candidatePool.slice(0, 10);
 
-        const fourPlayerGroups =
+        let bestMatch = null;
+
+        const groups =
             getCombinations(
                 candidatePool,
                 4
             );
 
-        let bestMatch = null;
-
-        for (
-            const fourPlayers
-            of fourPlayerGroups
-        ) {
+        for (const group of groups) {
             const layout =
-                evaluateTeamLayout(
-                    fourPlayers
-                );
-
-            const highestSelectedGames =
-                Math.max(
-                    ...fourPlayers.map(
-                        player =>
-                            player.scheduledGames
-                    )
-                );
-
-            const lowestSelectedGames =
-                Math.min(
-                    ...fourPlayers.map(
-                        player =>
-                            player.scheduledGames
-                    )
-                );
-
-            const fairnessPenalty =
-                (
-                    highestSelectedGames -
-                    lowestSelectedGames
-                ) * 3000;
+                evaluateTeamLayout(group);
 
             const totalGamePenalty =
-                fourPlayers.reduce(
+                group.reduce(
                     (total, player) =>
                         total +
                         (
@@ -1358,30 +1290,25 @@
                 ) * 2500;
 
             const recentPlayPenalty =
-                fourPlayers.reduce(
+                group.reduce(
                     (total, player) => {
                         const distance =
-                            eventState
-                                .matchSequence -
-                            player
-                                .lastAssignedMatch;
+                            eventState.matchSequence -
+                            player.lastAssignedMatch;
 
-                        if (
+                        return (
                             distance <=
                             eventState.settings
                                 .courtCount
-                        ) {
-                            return total + 500;
-                        }
-
-                        return total;
+                                ? total + 500
+                                : total
+                        );
                     },
                     0
                 );
 
             const totalScore =
                 layout.score +
-                fairnessPenalty +
                 totalGamePenalty +
                 recentPlayPenalty;
 
@@ -1450,20 +1377,10 @@
             ...match.teamB
         ];
 
-        /*
-            Final safety validation prevents a
-            player from being assigned to two
-            simultaneous courts.
-        */
-
-        for (
-            const player
-            of matchPlayers
-        ) {
+        for (const player of matchPlayers) {
             if (player.active) {
                 throw new Error(
-                    `${player.name} is already ` +
-                    `playing on another court.`
+                    `${player.name} is already playing.`
                 );
             }
         }
@@ -1479,12 +1396,8 @@
         match.startedAt =
             new Date();
 
-        for (
-            const player
-            of matchPlayers
-        ) {
+        for (const player of matchPlayers) {
             player.active = true;
-
             player.scheduledGames++;
 
             player.lastAssignedMatch =
@@ -1506,31 +1419,17 @@
             return;
         }
 
-        try {
-            for (
-                const court
-                of eventState.courts
-            ) {
-                if (!court.match) {
-                    assignMatchToCourt(
-                        court
-                    );
-                }
+        for (
+            const court
+            of eventState.courts
+        ) {
+            if (!court.match) {
+                assignMatchToCourt(court);
             }
-
-            renderEverything();
         }
-        catch (error) {
-            document.getElementById(
-                "eventStatus"
-            ).className =
-                "notice error";
 
-            document.getElementById(
-                "eventStatus"
-            ).textContent =
-                error.message;
-        }
+        saveEventState();
+        renderEverything();
     }
 
     function completeMatch(courtNumber) {
@@ -1579,6 +1478,7 @@
             assignMatchToCourt(court);
         }
 
+        saveEventState();
         renderEverything();
     }
 
@@ -1639,6 +1539,9 @@
                     courtCount,
                     minimumGames,
 
+                    ratingScale:
+                        getMaximumRating(),
+
                     minimizePartners:
                         document.getElementById(
                             "minimizePartners"
@@ -1668,12 +1571,12 @@
             };
 
             setSetupDisabled(true);
-
             fillOpenCourts();
+            saveEventState();
 
             message.innerHTML = `
                 <div class="notice success">
-                    Event started successfully.
+                    Event started and saved automatically.
                 </div>
             `;
         }
@@ -1686,6 +1589,371 @@
         }
     }
 
+    function createSavedMatch(match) {
+        if (!match) {
+            return null;
+        }
+
+        return {
+            matchNumber:
+                match.matchNumber,
+
+            courtNumber:
+                match.courtNumber,
+
+            teamAIds:
+                match.teamA.map(
+                    player => player.id
+                ),
+
+            teamBIds:
+                match.teamB.map(
+                    player => player.id
+                ),
+
+            teamASkill:
+                match.teamASkill,
+
+            teamBSkill:
+                match.teamBSkill,
+
+            skillDifference:
+                match.skillDifference,
+
+            startedAt:
+                match.startedAt
+                    ? new Date(
+                        match.startedAt
+                    ).toISOString()
+                    : null,
+
+            completedAt:
+                match.completedAt
+                    ? new Date(
+                        match.completedAt
+                    ).toISOString()
+                    : null
+        };
+    }
+
+    function createSavedState() {
+        return {
+            version: 1,
+
+            savedAt:
+                new Date().toISOString(),
+
+            nextPlayerId,
+
+            settings:
+                eventState.settings,
+
+            players:
+                eventState.players.map(
+                    player => ({
+                        ...player
+                    })
+                ),
+
+            courts:
+                eventState.courts.map(
+                    court => ({
+                        number:
+                            court.number,
+
+                        match:
+                            createSavedMatch(
+                                court.match
+                            )
+                    })
+                ),
+
+            matchSequence:
+                eventState.matchSequence,
+
+            completedMatches:
+                eventState
+                    .completedMatches
+                    .map(
+                        createSavedMatch
+                    ),
+
+            partnerHistory:
+                Array.from(
+                    eventState
+                        .partnerHistory
+                        .entries()
+                ),
+
+            opponentHistory:
+                Array.from(
+                    eventState
+                        .opponentHistory
+                        .entries()
+                ),
+
+            ended:
+                eventState.ended
+        };
+    }
+
+    function saveEventState() {
+        if (
+            !eventState ||
+            eventState.ended
+        ) {
+            return;
+        }
+
+        try {
+            const savedState =
+                createSavedState();
+
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(savedState)
+            );
+
+            document.getElementById(
+                "saveStatus"
+            ).textContent =
+                `Automatically saved at ` +
+                `${formatTime(new Date())}.`;
+        }
+        catch (error) {
+            document.getElementById(
+                "saveStatus"
+            ).textContent =
+                "Automatic save was unsuccessful.";
+        }
+    }
+
+    function restoreSavedMatch(
+        savedMatch,
+        playerMap
+    ) {
+        if (!savedMatch) {
+            return null;
+        }
+
+        return {
+            matchNumber:
+                savedMatch.matchNumber,
+
+            courtNumber:
+                savedMatch.courtNumber,
+
+            teamA:
+                savedMatch.teamAIds
+                    .map(
+                        id =>
+                            playerMap.get(id)
+                    )
+                    .filter(Boolean),
+
+            teamB:
+                savedMatch.teamBIds
+                    .map(
+                        id =>
+                            playerMap.get(id)
+                    )
+                    .filter(Boolean),
+
+            teamASkill:
+                savedMatch.teamASkill,
+
+            teamBSkill:
+                savedMatch.teamBSkill,
+
+            skillDifference:
+                savedMatch.skillDifference,
+
+            startedAt:
+                savedMatch.startedAt
+                    ? new Date(
+                        savedMatch.startedAt
+                    )
+                    : null,
+
+            completedAt:
+                savedMatch.completedAt
+                    ? new Date(
+                        savedMatch.completedAt
+                    )
+                    : null
+        };
+    }
+
+    function restoreSavedEvent() {
+        const savedText =
+            localStorage.getItem(
+                STORAGE_KEY
+            );
+
+        if (!savedText) {
+            return;
+        }
+
+        try {
+            const saved =
+                JSON.parse(savedText);
+
+            const savedTime =
+                saved.savedAt
+                    ? formatTime(
+                        new Date(
+                            saved.savedAt
+                        )
+                    )
+                    : "an earlier time";
+
+            const resume =
+                window.confirm(
+                    `A saved pickleball event was ` +
+                    `found from ${savedTime}. ` +
+                    `Select OK to resume it. ` +
+                    `Select Cancel to discard it.`
+                );
+
+            if (!resume) {
+                localStorage.removeItem(
+                    STORAGE_KEY
+                );
+
+                return;
+            }
+
+            const players =
+                saved.players.map(
+                    player => ({
+                        ...player
+                    })
+                );
+
+            const playerMap =
+                new Map(
+                    players.map(
+                        player => [
+                            player.id,
+                            player
+                        ]
+                    )
+                );
+
+            eventState = {
+                settings:
+                    saved.settings,
+
+                players,
+
+                courts:
+                    saved.courts.map(
+                        court => ({
+                            number:
+                                court.number,
+
+                            match:
+                                restoreSavedMatch(
+                                    court.match,
+                                    playerMap
+                                )
+                        })
+                    ),
+
+                matchSequence:
+                    saved.matchSequence || 0,
+
+                completedMatches:
+                    (
+                        saved.completedMatches ||
+                        []
+                    ).map(
+                        match =>
+                            restoreSavedMatch(
+                                match,
+                                playerMap
+                            )
+                    ),
+
+                partnerHistory:
+                    new Map(
+                        saved.partnerHistory ||
+                        []
+                    ),
+
+                opponentHistory:
+                    new Map(
+                        saved.opponentHistory ||
+                        []
+                    ),
+
+                ended: false
+            };
+
+            nextPlayerId =
+                saved.nextPlayerId || 1;
+
+            document.getElementById(
+                "courtCount"
+            ).value =
+                eventState.settings
+                    .courtCount;
+
+            document.getElementById(
+                "targetGames"
+            ).value =
+                eventState.settings
+                    .minimumGames;
+
+            document.getElementById(
+                "ratingScale"
+            ).value =
+                eventState.settings
+                    .ratingScale || 3;
+
+            document.getElementById(
+                "minimizePartners"
+            ).checked =
+                eventState.settings
+                    .minimizePartners;
+
+            document.getElementById(
+                "minimizeOpponents"
+            ).checked =
+                eventState.settings
+                    .minimizeOpponents;
+
+            setSetupDisabled(true);
+            renderEverything();
+
+            document.getElementById(
+                "saveStatus"
+            ).textContent =
+                `Saved event restored from ` +
+                `${savedTime}.`;
+        }
+        catch (error) {
+            console.error(
+                "Restore error:",
+                error
+            );
+
+            localStorage.removeItem(
+                STORAGE_KEY
+            );
+
+            document.getElementById(
+                "eventStatus"
+            ).className =
+                "notice error";
+
+            document.getElementById(
+                "eventStatus"
+            ).textContent =
+                "The saved event could not be restored.";
+        }
+    }
+
     function endEvent() {
         if (!eventState) {
             return;
@@ -1693,9 +1961,9 @@
 
         const confirmed =
             window.confirm(
-                "End the event? Current matches " +
-                "can be completed, but no new " +
-                "matches will be assigned."
+                "End the event? This will delete " +
+                "the automatically saved event. " +
+                "Current matches can still be closed."
             );
 
         if (!confirmed) {
@@ -1703,6 +1971,10 @@
         }
 
         eventState.ended = true;
+
+        localStorage.removeItem(
+            STORAGE_KEY
+        );
 
         document.getElementById(
             "fillButton"
@@ -1712,103 +1984,30 @@
             "endButton"
         ).disabled = true;
 
+        document.getElementById(
+            "saveStatus"
+        ).textContent =
+            "Event ended. Saved event deleted.";
+
         renderEverything();
     }
 
     function resetEvent() {
         const confirmed =
             window.confirm(
-                "Reset the event and clear all " +
-                "game history?"
+                "Reset the event and delete all " +
+                "saved match information?"
             );
 
         if (!confirmed) {
             return;
         }
 
-        eventState = null;
+        localStorage.removeItem(
+            STORAGE_KEY
+        );
 
-        setSetupDisabled(false);
-
-        document.getElementById(
-            "courtGrid"
-        ).innerHTML = "";
-
-        document.getElementById(
-            "waitingQueue"
-        ).innerHTML = `
-            <p class="help">
-                Waiting order will appear after
-                the event starts.
-            </p>
-        `;
-
-        document.getElementById(
-            "playerStatus"
-        ).innerHTML = `
-            <p class="help">
-                Player totals will appear after
-                the event starts.
-            </p>
-        `;
-
-        document.getElementById(
-            "matchHistory"
-        ).innerHTML = `
-            <p class="help">
-                Completed matches will appear here.
-            </p>
-        `;
-
-        document.getElementById(
-            "partnerHistoryDisplay"
-        ).innerHTML = `
-            <p class="help">
-                Partner combinations will appear here.
-            </p>
-        `;
-
-        document.getElementById(
-            "opponentHistoryDisplay"
-        ).innerHTML = `
-            <p class="help">
-                Opponent combinations will appear here.
-            </p>
-        `;
-
-        document.getElementById(
-            "eventStatus"
-        ).className =
-            "notice info";
-
-        document.getElementById(
-            "eventStatus"
-        ).textContent =
-            "Enter players and select Start Event.";
-
-        document.getElementById(
-            "targetProgress"
-        ).textContent = "0 / 0";
-
-        document.getElementById(
-            "activeCourtCount"
-        ).textContent = "0";
-
-        document.getElementById(
-            "completedMatchCount"
-        ).textContent = "0";
-
-        document.getElementById(
-            "gameRange"
-        ).textContent = "0-0";
-
-        document.getElementById(
-            "targetProgressBar"
-        ).style.width = "0%";
-
-        document.getElementById(
-            "message"
-        ).innerHTML = "";
+        window.location.reload();
     }
 
     function setSetupDisabled(disabled) {
@@ -1865,8 +2064,7 @@
 
             status.textContent =
                 activeCourts > 0
-                    ? "Event ended. Complete the active " +
-                      "matches to close the remaining courts."
+                    ? "Event ended. Complete active matches to close the courts."
                     : "Event completed. No courts are active.";
 
             return;
@@ -1877,13 +2075,11 @@
 
         status.textContent =
             `${activeCourts} court(s) active. ` +
-            `Complete any finished court to ` +
-            `assign the next match.`;
+            `Complete any finished court to assign the next match.`;
 
         if (everyoneReachedMinimum) {
             status.textContent +=
-                " Every player has reached the " +
-                "minimum target. Bonus play is continuing.";
+                " Everyone has reached the minimum target. Bonus play is continuing.";
         }
     }
 
@@ -1915,7 +2111,7 @@
         const maximumGames =
             Math.max(...gameCounts);
 
-        const progressPercent =
+        const percent =
             playerCount > 0
                 ? (
                     reachedCount /
@@ -1946,7 +2142,7 @@
         document.getElementById(
             "targetProgressBar"
         ).style.width =
-            `${progressPercent}%`;
+            `${percent}%`;
     }
 
     function renderCourts() {
@@ -1996,19 +2192,26 @@
                 continue;
             }
 
-            const match = court.match;
+            const match =
+                court.match;
 
             const teamA =
                 match.teamA
-                    .map(player =>
-                        escapeHtml(player.name)
+                    .map(
+                        player =>
+                            escapeHtml(
+                                player.name
+                            )
                     )
                     .join(" + ");
 
             const teamB =
                 match.teamB
-                    .map(player =>
-                        escapeHtml(player.name)
+                    .map(
+                        player =>
+                            escapeHtml(
+                                player.name
+                            )
                     )
                     .join(" + ");
 
@@ -2083,12 +2286,14 @@
         const waitingPlayers =
             getAvailablePlayersSorted();
 
-        if (waitingPlayers.length === 0) {
+        if (
+            waitingPlayers.length === 0
+        ) {
             document.getElementById(
                 "waitingQueue"
             ).innerHTML = `
                 <p class="help">
-                    All available players are currently playing.
+                    All players are currently playing.
                 </p>
             `;
 
@@ -2125,7 +2330,7 @@
     }
 
     function renderPlayerStatus() {
-        const highestGameCount =
+        const highestGames =
             Math.max(
                 ...eventState.players.map(
                     player =>
@@ -2176,10 +2381,6 @@
                 player.scheduledGames >=
                 eventState.settings.minimumGames;
 
-            const gamesBehind =
-                highestGameCount -
-                player.scheduledGames;
-
             html += `
                 <tr>
                     <td>
@@ -2199,7 +2400,10 @@
                     </td>
 
                     <td>
-                        ${gamesBehind}
+                        ${
+                            highestGames -
+                            player.scheduledGames
+                        }
                     </td>
 
                     <td class="${
@@ -2253,25 +2457,29 @@
 
         let html = "";
 
-        const completedMatches = [
-            ...eventState.completedMatches
-        ].reverse();
-
         for (
             const match
-            of completedMatches
+            of [
+                ...eventState.completedMatches
+            ].reverse()
         ) {
             const teamA =
                 match.teamA
-                    .map(player =>
-                        escapeHtml(player.name)
+                    .map(
+                        player =>
+                            escapeHtml(
+                                player.name
+                            )
                     )
                     .join(" + ");
 
             const teamB =
                 match.teamB
-                    .map(player =>
-                        escapeHtml(player.name)
+                    .map(
+                        player =>
+                            escapeHtml(
+                                player.name
+                            )
                     )
                     .join(" + ");
 
@@ -2319,7 +2527,7 @@
 
     function renderHistoryMap(
         map,
-        targetElementId,
+        elementId,
         separator
     ) {
         const records = [];
@@ -2353,16 +2561,12 @@
         records.sort(
             (first, second) =>
                 second.count -
-                first.count ||
-                first.firstPlayer.name
-                    .localeCompare(
-                        second.firstPlayer.name
-                    )
+                first.count
         );
 
         if (records.length === 0) {
             document.getElementById(
-                targetElementId
+                elementId
             ).innerHTML = `
                 <p class="help">
                     No combinations recorded yet.
@@ -2374,10 +2578,7 @@
 
         let html = "";
 
-        for (
-            const record
-            of records
-        ) {
+        for (const record of records) {
             html += `
                 <div class="pair-item">
 
@@ -2400,7 +2601,7 @@
         }
 
         document.getElementById(
-            targetElementId
+            elementId
         ).innerHTML = html;
     }
 
@@ -2428,11 +2629,6 @@
         updateEventStatus();
     }
 
-    /*
-        Eight blank rows are displayed initially.
-        The organizer can add or remove rows freely.
-    */
-
     for (
         let index = 0;
         index < 8;
@@ -2440,6 +2636,25 @@
     ) {
         addPlayerRow();
     }
+
+    window.addEventListener(
+        "load",
+        restoreSavedEvent
+    );
+
+    window.addEventListener(
+        "beforeunload",
+        function () {
+            saveEventState();
+        }
+    );
+
+    setInterval(
+        function () {
+            saveEventState();
+        },
+        10000
+    );
 </script>
 
 </body>
