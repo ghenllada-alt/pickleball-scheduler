@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
 
@@ -26,7 +25,7 @@
 
         .container {
             width: 100%;
-            max-width: 1250px;
+            max-width: 1300px;
             margin: auto;
         }
 
@@ -41,8 +40,13 @@
         }
 
         .subtitle,
-        .help {
+        .help,
+        .small {
             color: #607080;
+        }
+
+        .small {
+            font-size: 13px;
         }
 
         .panel {
@@ -53,11 +57,26 @@
             box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
         }
 
-        .settings-grid {
+        .settings-grid,
+        .summary-grid {
             display: grid;
             grid-template-columns:
-                repeat(auto-fit, minmax(210px, 1fr));
-            gap: 16px;
+                repeat(auto-fit, minmax(190px, 1fr));
+            gap: 14px;
+        }
+
+        .summary-card {
+            padding: 16px;
+            background: #e6fcf5;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-number {
+            display: block;
+            color: #087f5b;
+            font-size: 28px;
+            font-weight: bold;
         }
 
         label {
@@ -147,17 +166,18 @@
             min-width: 155px;
         }
 
-        .players-header {
-            display: grid;
-            grid-template-columns: 1fr 130px 110px;
-            gap: 10px;
-            font-weight: bold;
-        }
-
+        .players-header,
         .player-row {
             display: grid;
             grid-template-columns: 1fr 130px 110px;
             gap: 10px;
+        }
+
+        .players-header {
+            font-weight: bold;
+        }
+
+        .player-row {
             margin: 10px 0;
             align-items: end;
         }
@@ -209,7 +229,7 @@
             color: #8a5b00;
         }
 
-        .badge.ended-badge {
+        .badge.closed-badge {
             background: #e2e8f0;
             color: #475569;
         }
@@ -256,19 +276,45 @@
             color: #7a5200;
         }
 
-        .history-item {
+        .minimum-reached {
+            color: #087f5b;
+            font-weight: bold;
+        }
+
+        .history-item,
+        .queue-item,
+        .pair-item {
             padding: 10px 0;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        .small {
-            color: #607080;
-            font-size: 13px;
-        }
-
-        .minimum-reached {
+        .queue-number {
+            display: inline-block;
+            width: 30px;
             color: #087f5b;
             font-weight: bold;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 18px;
+            margin-top: 12px;
+            overflow: hidden;
+            background: #e2e8f0;
+            border-radius: 999px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #087f5b;
+            transition: width 0.3s ease;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(300px, 1fr));
+            gap: 18px;
         }
 
         table {
@@ -317,11 +363,14 @@
                 width: 100%;
             }
 
-            .court-grid {
+            .court-grid,
+            .two-column {
                 grid-template-columns: 1fr;
             }
 
             table {
+                display: block;
+                overflow-x: auto;
                 font-size: 13px;
             }
         }
@@ -355,18 +404,16 @@
     <h1>🏓 Pickleball Live Court Scheduler</h1>
 
     <p class="subtitle">
-        Courts operate independently. When a court finishes,
-        the next fair match is assigned without using players
-        who are still playing on another court.
+        Fair live-court rotation with balanced teams,
+        waiting-player priority, and minimized repeat pairings.
     </p>
 
-    <!-- SETTINGS -->
+    <!-- EVENT SETTINGS -->
 
     <section
         class="panel no-print"
         id="setupPanel"
     >
-
         <h2>1. Event Settings</h2>
 
         <div class="settings-grid">
@@ -435,26 +482,23 @@
         </label>
 
         <p class="help">
-            The minimum-games setting is a fairness target only.
-            Matches will continue after everyone reaches the target.
-            The scheduler will stop creating matches only when you
-            select End Event.
+            Minimum games is a fairness target, not a stopping
+            limit. The scheduler continues until End Event is
+            selected.
         </p>
-
     </section>
 
-    <!-- PLAYERS -->
+    <!-- PLAYER ENTRY -->
 
     <section
         class="panel no-print"
         id="playersPanel"
     >
-
         <h2>2. Players</h2>
 
         <p class="help">
-            Enter any number of players. Four available players
-            are required to create a doubles match.
+            Enter player names and ratings. At least four
+            available players are required for doubles.
         </p>
 
         <div class="players-header">
@@ -493,14 +537,13 @@
         </div>
 
         <div id="message"></div>
-
     </section>
 
-    <!-- CONTROLS -->
+    <!-- EVENT BUTTONS -->
 
     <section class="panel no-print">
 
-        <h2>3. Start and Manage Games</h2>
+        <h2>3. Manage Event</h2>
 
         <div class="button-row">
 
@@ -514,8 +557,8 @@
 
             <button
                 type="button"
-                class="secondary"
                 id="fillButton"
+                class="secondary"
                 onclick="fillOpenCourts()"
                 disabled
             >
@@ -524,8 +567,8 @@
 
             <button
                 type="button"
-                class="danger"
                 id="endButton"
+                class="danger"
                 onclick="endEvent()"
                 disabled
             >
@@ -534,8 +577,8 @@
 
             <button
                 type="button"
-                class="warning"
                 id="resetButton"
+                class="warning"
                 onclick="resetEvent()"
                 disabled
             >
@@ -553,11 +596,78 @@
         </div>
 
         <p class="help">
-            Select Complete & Assign Next whenever a court
-            finishes. That court will immediately receive the
-            next available fair match.
+            When a court finishes, select Complete & Assign Next
+            on that court. A new fair match will be assigned
+            immediately if four players are available.
         </p>
 
+    </section>
+
+    <!-- EVENT SUMMARY -->
+
+    <section class="panel">
+
+        <h2>Event Progress</h2>
+
+        <div
+            id="eventStatus"
+            class="notice info"
+        >
+            Enter players and select Start Event.
+        </div>
+
+        <div
+            id="summaryGrid"
+            class="summary-grid"
+        >
+            <div class="summary-card">
+                <span
+                    class="summary-number"
+                    id="targetProgress"
+                >
+                    0 / 0
+                </span>
+                Players Reached Target
+            </div>
+
+            <div class="summary-card">
+                <span
+                    class="summary-number"
+                    id="activeCourtCount"
+                >
+                    0
+                </span>
+                Active Courts
+            </div>
+
+            <div class="summary-card">
+                <span
+                    class="summary-number"
+                    id="completedMatchCount"
+                >
+                    0
+                </span>
+                Completed Matches
+            </div>
+
+            <div class="summary-card">
+                <span
+                    class="summary-number"
+                    id="gameRange"
+                >
+                    0-0
+                </span>
+                Scheduled Game Range
+            </div>
+        </div>
+
+        <div class="progress-track">
+            <div
+                id="targetProgressBar"
+                class="progress-bar"
+                style="width: 0%"
+            ></div>
+        </div>
     </section>
 
     <!-- LIVE COURTS -->
@@ -567,16 +677,29 @@
         <h2>Live Courts</h2>
 
         <div
-            id="eventStatus"
-            class="notice info"
-        >
-            Enter the players and select Start Event.
-        </div>
-
-        <div
             id="courtGrid"
             class="court-grid"
         ></div>
+
+    </section>
+
+    <!-- WAITING QUEUE -->
+
+    <section class="panel">
+
+        <h2>Waiting Queue</h2>
+
+        <p class="help">
+            Players with fewer games and longer waiting time
+            appear first. The exact next match also depends on
+            skill balance and repeat history.
+        </p>
+
+        <div id="waitingQueue">
+            <p class="help">
+                Waiting order will appear after the event starts.
+            </p>
+        </div>
 
     </section>
 
@@ -588,22 +711,54 @@
 
         <div id="playerStatus">
             <p class="help">
-                Player totals will appear after the event begins.
+                Player totals will appear after the event starts.
             </p>
         </div>
 
     </section>
 
-    <!-- HISTORY -->
+    <!-- MATCH HISTORY -->
 
     <section class="panel">
 
         <h2>Completed Match History</h2>
 
-        <div id="history">
+        <div id="matchHistory">
             <p class="help">
                 Completed matches will appear here.
             </p>
+        </div>
+
+    </section>
+
+    <!-- PARTNER AND OPPONENT HISTORY -->
+
+    <section class="panel">
+
+        <h2>Pairing History</h2>
+
+        <div class="two-column">
+
+            <div>
+                <h3>Partner History</h3>
+
+                <div id="partnerHistoryDisplay">
+                    <p class="help">
+                        Partner combinations will appear here.
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <h3>Opponent History</h3>
+
+                <div id="opponentHistoryDisplay">
+                    <p class="help">
+                        Opponent combinations will appear here.
+                    </p>
+                </div>
+            </div>
+
         </div>
 
     </section>
@@ -627,19 +782,39 @@
         );
     }
 
-    function getMaximumRating() {
-        return Number(
-            document.getElementById("ratingScale").value
+    function formatTime(date) {
+        if (!date) {
+            return "";
+        }
+
+        return date.toLocaleTimeString(
+            [],
+            {
+                hour: "2-digit",
+                minute: "2-digit"
+            }
         );
     }
 
-    function buildRatingOptions(selectedRating = 2) {
-        const maximumRating = getMaximumRating();
-
-        const selectedValue = Math.min(
-            Number(selectedRating) || 1,
-            maximumRating
+    function getMaximumRating() {
+        return Number(
+            document.getElementById(
+                "ratingScale"
+            ).value
         );
+    }
+
+    function buildRatingOptions(
+        selectedRating = 2
+    ) {
+        const maximumRating =
+            getMaximumRating();
+
+        const selectedValue =
+            Math.min(
+                Number(selectedRating) || 1,
+                maximumRating
+            );
 
         let options = "";
 
@@ -651,7 +826,11 @@
             options += `
                 <option
                     value="${rating}"
-                    ${rating === selectedValue ? "selected" : ""}
+                    ${
+                        rating === selectedValue
+                            ? "selected"
+                            : ""
+                    }
                 >
                     ${rating}
                 </option>
@@ -662,15 +841,17 @@
     }
 
     function refreshRatingOptions() {
-        const ratingFields =
-            document.querySelectorAll(".player-rating");
+        document
+            .querySelectorAll(".player-rating")
+            .forEach(field => {
+                const oldRating =
+                    Number(field.value);
 
-        ratingFields.forEach(field => {
-            const currentValue = Number(field.value);
-
-            field.innerHTML =
-                buildRatingOptions(currentValue);
-        });
+                field.innerHTML =
+                    buildRatingOptions(
+                        oldRating
+                    );
+            });
     }
 
     function addPlayerRow(
@@ -685,7 +866,8 @@
             document.createElement("div");
 
         row.className = "player-row";
-        row.dataset.playerId = nextPlayerId++;
+        row.dataset.playerId =
+            nextPlayerId++;
 
         row.innerHTML = `
             <input
@@ -755,51 +937,64 @@
         const players = [];
         const usedNames = new Set();
 
-        const rows =
-            document.querySelectorAll(".player-row");
+        document
+            .querySelectorAll(".player-row")
+            .forEach(row => {
+                const name = row
+                    .querySelector(".player-name")
+                    .value
+                    .trim();
 
-        rows.forEach(row => {
-            const name = row
-                .querySelector(".player-name")
-                .value
-                .trim();
+                if (!name) {
+                    return;
+                }
 
-            if (!name) {
-                return;
-            }
+                const nameKey =
+                    name.toLowerCase();
 
-            const normalizedName =
-                name.toLowerCase();
+                if (usedNames.has(nameKey)) {
+                    throw new Error(
+                        `Duplicate player name: ${name}`
+                    );
+                }
 
-            if (usedNames.has(normalizedName)) {
-                throw new Error(
-                    `Duplicate player name: ${name}`
-                );
-            }
+                usedNames.add(nameKey);
 
-            usedNames.add(normalizedName);
+                players.push({
+                    id: Number(
+                        row.dataset.playerId
+                    ),
 
-            players.push({
-                id: Number(row.dataset.playerId),
-                name: name,
-                rating: Number(
-                    row.querySelector(
-                        ".player-rating"
-                    ).value
-                ),
-                scheduledGames: 0,
-                completedGames: 0,
-                active: false,
-                lastAssignedMatch: -1000
+                    name,
+
+                    rating: Number(
+                        row.querySelector(
+                            ".player-rating"
+                        ).value
+                    ),
+
+                    scheduledGames: 0,
+                    completedGames: 0,
+                    active: false,
+                    lastAssignedMatch: -1000
+                });
             });
-        });
 
         return players;
     }
 
-    function pairKey(firstId, secondId) {
-        return [firstId, secondId]
-            .sort((first, second) => first - second)
+    function pairKey(
+        firstId,
+        secondId
+    ) {
+        return [
+            firstId,
+            secondId
+        ]
+            .sort(
+                (first, second) =>
+                    first - second
+            )
             .join("-");
     }
 
@@ -810,7 +1005,10 @@
     ) {
         return (
             history.get(
-                pairKey(firstId, secondId)
+                pairKey(
+                    firstId,
+                    secondId
+                )
             ) || 0
         );
     }
@@ -821,7 +1019,10 @@
         secondId
     ) {
         const key =
-            pairKey(firstId, secondId);
+            pairKey(
+                firstId,
+                secondId
+            );
 
         history.set(
             key,
@@ -833,44 +1034,44 @@
         items,
         requiredSize
     ) {
-        const output = [];
+        const result = [];
 
         function build(
-            startingIndex,
-            selectedItems
+            startIndex,
+            chosen
         ) {
             if (
-                selectedItems.length ===
+                chosen.length ===
                 requiredSize
             ) {
-                output.push([
-                    ...selectedItems
+                result.push([
+                    ...chosen
                 ]);
 
                 return;
             }
 
             for (
-                let index = startingIndex;
+                let index = startIndex;
                 index < items.length;
                 index++
             ) {
-                selectedItems.push(
+                chosen.push(
                     items[index]
                 );
 
                 build(
                     index + 1,
-                    selectedItems
+                    chosen
                 );
 
-                selectedItems.pop();
+                chosen.pop();
             }
         }
 
         build(0, []);
 
-        return output;
+        return result;
     }
 
     function evaluateTeamLayout(
@@ -887,6 +1088,7 @@
                     fourPlayers[3]
                 ]
             ],
+
             [
                 [
                     fourPlayers[0],
@@ -897,6 +1099,7 @@
                     fourPlayers[3]
                 ]
             ],
+
             [
                 [
                     fourPlayers[0],
@@ -909,7 +1112,7 @@
             ]
         ];
 
-        const evaluatedLayouts =
+        const evaluated =
             layouts.map(layout => {
                 const teamA = layout[0];
                 const teamB = layout[1];
@@ -952,34 +1155,26 @@
                     ) {
                         opponentRepeats +=
                             getHistoryCount(
-                                eventState.opponentHistory,
+                                eventState
+                                    .opponentHistory,
                                 teamAPlayer.id,
                                 teamBPlayer.id
                             );
                     }
                 }
 
-                /*
-                    Skill balance has the highest
-                    match-layout priority.
-
-                    Partner and opponent penalties
-                    reduce repetitions but do not make
-                    repetitions impossible.
-                */
-
                 const score =
                     skillDifference * 1000 +
                     (
                         eventState.settings
                             .minimizePartners
-                            ? partnerRepeats * 60
+                            ? partnerRepeats * 100
                             : 0
                     ) +
                     (
                         eventState.settings
                             .minimizeOpponents
-                            ? opponentRepeats * 8
+                            ? opponentRepeats * 20
                             : 0
                     );
 
@@ -995,13 +1190,45 @@
                 };
             });
 
-        evaluatedLayouts.sort(
+        evaluated.sort(
             (first, second) =>
                 first.score -
                 second.score
         );
 
-        return evaluatedLayouts[0];
+        return evaluated[0];
+    }
+
+    function getAvailablePlayersSorted() {
+        return eventState.players
+            .filter(
+                player => !player.active
+            )
+            .sort((first, second) => {
+                if (
+                    first.scheduledGames !==
+                    second.scheduledGames
+                ) {
+                    return (
+                        first.scheduledGames -
+                        second.scheduledGames
+                    );
+                }
+
+                if (
+                    first.lastAssignedMatch !==
+                    second.lastAssignedMatch
+                ) {
+                    return (
+                        first.lastAssignedMatch -
+                        second.lastAssignedMatch
+                    );
+                }
+
+                return first.name.localeCompare(
+                    second.name
+                );
+            });
     }
 
     function selectNextMatch() {
@@ -1013,9 +1240,7 @@
         }
 
         const availablePlayers =
-            eventState.players.filter(
-                player => !player.active
-            );
+            getAvailablePlayersSorted();
 
         if (
             availablePlayers.length < 4
@@ -1023,65 +1248,64 @@
             return null;
         }
 
-        const minimumScheduledGames =
-            Math.min(
-                ...availablePlayers.map(
-                    player =>
-                        player.scheduledGames
-                )
-            );
+        const lowestGameCount =
+            availablePlayers[0]
+                .scheduledGames;
 
         /*
-            Players with fewer games are listed first.
-
-            When game totals are equal, players who
-            have waited longer since their last
-            assignment are listed first.
+            Players who are more than one game
+            behind other players receive strict
+            selection priority.
         */
 
-        const sortedCandidates = [
-            ...availablePlayers
-        ].sort((first, second) => {
-            if (
-                first.scheduledGames !==
-                second.scheduledGames
-            ) {
-                return (
-                    first.scheduledGames -
-                    second.scheduledGames
-                );
-            }
+        const priorityPlayers =
+            availablePlayers.filter(
+                player =>
+                    player.scheduledGames <=
+                    lowestGameCount + 1
+            );
 
-            if (
-                first.lastAssignedMatch !==
-                second.lastAssignedMatch
-            ) {
-                return (
-                    first.lastAssignedMatch -
-                    second.lastAssignedMatch
-                );
-            }
-
-            return Math.random() - 0.5;
-        });
+        let candidatePool = [
+            ...priorityPlayers
+        ];
 
         /*
-            Consider more than four candidates so
-            the scheduler can find better skill and
-            rotation combinations.
+            At least four candidates are required.
+            Additional players are added only when
+            needed to form a complete match.
         */
 
-        const candidatePoolSize =
-            Math.min(
-                sortedCandidates.length,
-                10
-            );
+        if (candidatePool.length < 4) {
+            for (
+                const player
+                of availablePlayers
+            ) {
+                if (
+                    !candidatePool.includes(
+                        player
+                    )
+                ) {
+                    candidatePool.push(
+                        player
+                    );
+                }
 
-        const candidatePool =
-            sortedCandidates.slice(
-                0,
-                candidatePoolSize
-            );
+                if (
+                    candidatePool.length >= 4
+                ) {
+                    break;
+                }
+            }
+        }
+
+        /*
+            Limit the search pool so the browser
+            remains responsive when many players
+            are entered.
+        */
+
+        candidatePool =
+            candidatePool.slice(0, 10);
 
         const fourPlayerGroups =
             getCombinations(
@@ -1100,43 +1324,54 @@
                     fourPlayers
                 );
 
-            /*
-                Game-count fairness receives the
-                strongest player-selection penalty.
-            */
+            const highestSelectedGames =
+                Math.max(
+                    ...fourPlayers.map(
+                        player =>
+                            player.scheduledGames
+                    )
+                );
 
-            const gameDifferencePenalty =
+            const lowestSelectedGames =
+                Math.min(
+                    ...fourPlayers.map(
+                        player =>
+                            player.scheduledGames
+                    )
+                );
+
+            const fairnessPenalty =
+                (
+                    highestSelectedGames -
+                    lowestSelectedGames
+                ) * 3000;
+
+            const totalGamePenalty =
                 fourPlayers.reduce(
-                    (total, player) => {
-                        return (
-                            total +
-                            (
-                                player.scheduledGames -
-                                minimumScheduledGames
-                            )
-                        );
-                    },
+                    (total, player) =>
+                        total +
+                        (
+                            player.scheduledGames -
+                            lowestGameCount
+                        ),
                     0
-                ) * 2000;
-
-            /*
-                This discourages immediate back-to-back
-                games when other players have waited.
-            */
+                ) * 2500;
 
             const recentPlayPenalty =
                 fourPlayers.reduce(
                     (total, player) => {
-                        const matchDistance =
-                            eventState.matchSequence -
-                            player.lastAssignedMatch;
+                        const distance =
+                            eventState
+                                .matchSequence -
+                            player
+                                .lastAssignedMatch;
 
                         if (
-                            matchDistance <=
+                            distance <=
                             eventState.settings
                                 .courtCount
                         ) {
-                            return total + 250;
+                            return total + 500;
                         }
 
                         return total;
@@ -1146,7 +1381,8 @@
 
             const totalScore =
                 layout.score +
-                gameDifferencePenalty +
+                fairnessPenalty +
+                totalGamePenalty +
                 recentPlayPenalty;
 
             if (
@@ -1178,17 +1414,17 @@
         );
 
         for (
-            const teamAPlayer
+            const playerA
             of match.teamA
         ) {
             for (
-                const teamBPlayer
+                const playerB
                 of match.teamB
             ) {
                 increaseHistoryCount(
                     eventState.opponentHistory,
-                    teamAPlayer.id,
-                    teamBPlayer.id
+                    playerA.id,
+                    playerB.id
                 );
             }
         }
@@ -1209,21 +1445,16 @@
             return false;
         }
 
-        eventState.matchSequence++;
-
-        match.matchNumber =
-            eventState.matchSequence;
-
-        match.courtNumber =
-            court.number;
-
-        match.startedAt =
-            new Date();
-
         const matchPlayers = [
             ...match.teamA,
             ...match.teamB
         ];
+
+        /*
+            Final safety validation prevents a
+            player from being assigned to two
+            simultaneous courts.
+        */
 
         for (
             const player
@@ -1236,6 +1467,17 @@
                 );
             }
         }
+
+        eventState.matchSequence++;
+
+        match.matchNumber =
+            eventState.matchSequence;
+
+        match.courtNumber =
+            court.number;
+
+        match.startedAt =
+            new Date();
 
         for (
             const player
@@ -1264,16 +1506,31 @@
             return;
         }
 
-        for (
-            const court
-            of eventState.courts
-        ) {
-            if (!court.match) {
-                assignMatchToCourt(court);
+        try {
+            for (
+                const court
+                of eventState.courts
+            ) {
+                if (!court.match) {
+                    assignMatchToCourt(
+                        court
+                    );
+                }
             }
-        }
 
-        renderEverything();
+            renderEverything();
+        }
+        catch (error) {
+            document.getElementById(
+                "eventStatus"
+            ).className =
+                "notice error";
+
+            document.getElementById(
+                "eventStatus"
+            ).textContent =
+                error.message;
+        }
     }
 
     function completeMatch(courtNumber) {
@@ -1305,25 +1562,18 @@
             completedMatch
         );
 
-        const matchPlayers = [
-            ...completedMatch.teamA,
-            ...completedMatch.teamB
-        ];
-
         for (
             const player
-            of matchPlayers
+            of [
+                ...completedMatch.teamA,
+                ...completedMatch.teamB
+            ]
         ) {
             player.active = false;
             player.completedGames++;
         }
 
         court.match = null;
-
-        /*
-            If the event has not ended, immediately
-            assign the next fair match to this court.
-        */
 
         if (!eventState.ended) {
             assignMatchToCourt(court);
@@ -1360,8 +1610,7 @@
 
             if (players.length < 4) {
                 throw new Error(
-                    "Enter at least four named " +
-                    "players to create a doubles match."
+                    "Enter at least four named players."
                 );
             }
 
@@ -1379,8 +1628,7 @@
                 minimumGames < 1
             ) {
                 throw new Error(
-                    "Minimum games per player must " +
-                    "be at least 1."
+                    "Minimum games must be at least 1."
                 );
             }
 
@@ -1426,8 +1674,6 @@
             message.innerHTML = `
                 <div class="notice success">
                     Event started successfully.
-                    Select Complete & Assign Next
-                    whenever a court finishes.
                 </div>
             `;
         }
@@ -1445,6 +1691,17 @@
             return;
         }
 
+        const confirmed =
+            window.confirm(
+                "End the event? Current matches " +
+                "can be completed, but no new " +
+                "matches will be assigned."
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
         eventState.ended = true;
 
         document.getElementById(
@@ -1459,6 +1716,16 @@
     }
 
     function resetEvent() {
+        const confirmed =
+            window.confirm(
+                "Reset the event and clear all " +
+                "game history?"
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
         eventState = null;
 
         setSetupDisabled(false);
@@ -1468,32 +1735,76 @@
         ).innerHTML = "";
 
         document.getElementById(
-            "playerStatus"
+            "waitingQueue"
         ).innerHTML = `
             <p class="help">
-                Player totals will appear after
-                the event begins.
+                Waiting order will appear after
+                the event starts.
             </p>
         `;
 
         document.getElementById(
-            "history"
+            "playerStatus"
+        ).innerHTML = `
+            <p class="help">
+                Player totals will appear after
+                the event starts.
+            </p>
+        `;
+
+        document.getElementById(
+            "matchHistory"
         ).innerHTML = `
             <p class="help">
                 Completed matches will appear here.
             </p>
         `;
 
-        const status =
-            document.getElementById(
-                "eventStatus"
-            );
+        document.getElementById(
+            "partnerHistoryDisplay"
+        ).innerHTML = `
+            <p class="help">
+                Partner combinations will appear here.
+            </p>
+        `;
 
-        status.className =
+        document.getElementById(
+            "opponentHistoryDisplay"
+        ).innerHTML = `
+            <p class="help">
+                Opponent combinations will appear here.
+            </p>
+        `;
+
+        document.getElementById(
+            "eventStatus"
+        ).className =
             "notice info";
 
-        status.textContent =
-            "Enter the players and select Start Event.";
+        document.getElementById(
+            "eventStatus"
+        ).textContent =
+            "Enter players and select Start Event.";
+
+        document.getElementById(
+            "targetProgress"
+        ).textContent = "0 / 0";
+
+        document.getElementById(
+            "activeCourtCount"
+        ).textContent = "0";
+
+        document.getElementById(
+            "completedMatchCount"
+        ).textContent = "0";
+
+        document.getElementById(
+            "gameRange"
+        ).textContent = "0-0";
+
+        document.getElementById(
+            "targetProgressBar"
+        ).style.width = "0%";
 
         document.getElementById(
             "message"
@@ -1501,18 +1812,17 @@
     }
 
     function setSetupDisabled(disabled) {
-        const setupElements =
-            document.querySelectorAll(
+        document
+            .querySelectorAll(
                 "#setupPanel input, " +
                 "#setupPanel select, " +
                 "#playersPanel input, " +
                 "#playersPanel select, " +
                 "#playersPanel button"
-            );
-
-        setupElements.forEach(element => {
-            element.disabled = disabled;
-        });
+            )
+            .forEach(element => {
+                element.disabled = disabled;
+            });
 
         document.getElementById(
             "startButton"
@@ -1532,10 +1842,6 @@
     }
 
     function updateEventStatus() {
-        if (!eventState) {
-            return;
-        }
-
         const status =
             document.getElementById(
                 "eventStatus"
@@ -1544,11 +1850,6 @@
         const activeCourts =
             eventState.courts.filter(
                 court => court.match
-            ).length;
-
-        const availablePlayers =
-            eventState.players.filter(
-                player => !player.active
             ).length;
 
         const everyoneReachedMinimum =
@@ -1562,66 +1863,93 @@
             status.className =
                 "notice warning-notice";
 
-            if (activeCourts > 0) {
-                status.textContent =
-                    "Event ended. No new matches will " +
-                    "be assigned. Complete the matches " +
-                    "currently in progress to close " +
-                    "the remaining courts.";
-            }
-            else {
-                status.textContent =
-                    "Event completed. No matches are active.";
-            }
-
-            return;
-        }
-
-        if (activeCourts > 0) {
-            status.className =
-                "notice success";
-
             status.textContent =
-                `${activeCourts} court(s) active. ` +
-                `When a court finishes, select ` +
-                `Complete & Assign Next.`;
-
-            if (everyoneReachedMinimum) {
-                status.textContent +=
-                    " Every player has reached the " +
-                    "minimum-games target. Extended " +
-                    "play is continuing.";
-            }
-
-            return;
-        }
-
-        if (availablePlayers < 4) {
-            status.className =
-                "notice info";
-
-            status.textContent =
-                "Fewer than four players are currently " +
-                "available. Complete an active court " +
-                "before assigning another match.";
+                activeCourts > 0
+                    ? "Event ended. Complete the active " +
+                      "matches to close the remaining courts."
+                    : "Event completed. No courts are active.";
 
             return;
         }
 
         status.className =
-            "notice info";
+            "notice success";
 
         status.textContent =
-            "An open court is available. " +
-            "Select Fill Open Courts.";
+            `${activeCourts} court(s) active. ` +
+            `Complete any finished court to ` +
+            `assign the next match.`;
+
+        if (everyoneReachedMinimum) {
+            status.textContent +=
+                " Every player has reached the " +
+                "minimum target. Bonus play is continuing.";
+        }
+    }
+
+    function renderProgress() {
+        const playerCount =
+            eventState.players.length;
+
+        const reachedCount =
+            eventState.players.filter(
+                player =>
+                    player.scheduledGames >=
+                    eventState.settings.minimumGames
+            ).length;
+
+        const activeCourts =
+            eventState.courts.filter(
+                court => court.match
+            ).length;
+
+        const gameCounts =
+            eventState.players.map(
+                player =>
+                    player.scheduledGames
+            );
+
+        const minimumGames =
+            Math.min(...gameCounts);
+
+        const maximumGames =
+            Math.max(...gameCounts);
+
+        const progressPercent =
+            playerCount > 0
+                ? (
+                    reachedCount /
+                    playerCount
+                ) * 100
+                : 0;
+
+        document.getElementById(
+            "targetProgress"
+        ).textContent =
+            `${reachedCount} / ${playerCount}`;
+
+        document.getElementById(
+            "activeCourtCount"
+        ).textContent =
+            activeCourts;
+
+        document.getElementById(
+            "completedMatchCount"
+        ).textContent =
+            eventState.completedMatches.length;
+
+        document.getElementById(
+            "gameRange"
+        ).textContent =
+            `${minimumGames}-${maximumGames}`;
+
+        document.getElementById(
+            "targetProgressBar"
+        ).style.width =
+            `${progressPercent}%`;
     }
 
     function renderCourts() {
-        const courtGrid =
-            document.getElementById(
-                "courtGrid"
-            );
-
         let html = "";
 
         for (
@@ -1629,75 +1957,65 @@
             of eventState.courts
         ) {
             if (!court.match) {
-                if (eventState.ended) {
-                    html += `
-                        <article class="court-card closed">
+                html += `
+                    <article class="court-card ${
+                        eventState.ended
+                            ? "closed"
+                            : "open"
+                    }">
 
-                            <div class="court-head">
-                                <h3>Court ${court.number}</h3>
+                        <div class="court-head">
+                            <h3>
+                                Court ${court.number}
+                            </h3>
 
-                                <span class="badge ended-badge">
-                                    Closed
-                                </span>
-                            </div>
+                            <span class="badge ${
+                                eventState.ended
+                                    ? "closed-badge"
+                                    : "open-badge"
+                            }">
+                                ${
+                                    eventState.ended
+                                        ? "Closed"
+                                        : "Open"
+                                }
+                            </span>
+                        </div>
 
-                            <p>
-                                The event has ended.
-                                No new match will be assigned.
-                            </p>
+                        <p>
+                            ${
+                                eventState.ended
+                                    ? "No new match will be assigned."
+                                    : "Waiting for four available players."
+                            }
+                        </p>
 
-                        </article>
-                    `;
-                }
-                else {
-                    html += `
-                        <article class="court-card open">
-
-                            <div class="court-head">
-                                <h3>Court ${court.number}</h3>
-
-                                <span class="badge open-badge">
-                                    Open
-                                </span>
-                            </div>
-
-                            <p>
-                                No match is currently assigned.
-                            </p>
-
-                        </article>
-                    `;
-                }
+                    </article>
+                `;
 
                 continue;
             }
 
             const match = court.match;
 
-            const teamANames =
+            const teamA =
                 match.teamA
                     .map(player =>
                         escapeHtml(player.name)
                     )
                     .join(" + ");
 
-            const teamBNames =
+            const teamB =
                 match.teamB
                     .map(player =>
                         escapeHtml(player.name)
                     )
                     .join(" + ");
 
-            const buttonText =
-                eventState.ended
-                    ? "Complete & Close Court"
-                    : "Complete & Assign Next";
-
             html += `
                 <article class="court-card">
 
                     <div class="court-head">
-
                         <h3>
                             Court ${court.number}
                         </h3>
@@ -1705,18 +2023,20 @@
                         <span class="badge">
                             Match ${match.matchNumber}
                         </span>
-
                     </div>
 
-                    <div class="team">
+                    <p class="small">
+                        Started:
+                        ${formatTime(match.startedAt)}
+                    </p>
 
-                        ${teamANames}
+                    <div class="team">
+                        ${teamA}
 
                         <div class="rating-total">
                             Combined rating:
                             ${match.teamASkill}
                         </div>
-
                     </div>
 
                     <div class="versus">
@@ -1724,14 +2044,12 @@
                     </div>
 
                     <div class="team">
-
-                        ${teamBNames}
+                        ${teamB}
 
                         <div class="rating-total">
                             Combined rating:
                             ${match.teamBSkill}
                         </div>
-
                     </div>
 
                     <p class="small">
@@ -1745,17 +2063,76 @@
                             ${court.number}
                         )"
                     >
-                        ${buttonText}
+                        ${
+                            eventState.ended
+                                ? "Complete & Close Court"
+                                : "Complete & Assign Next"
+                        }
                     </button>
 
                 </article>
             `;
         }
 
-        courtGrid.innerHTML = html;
+        document.getElementById(
+            "courtGrid"
+        ).innerHTML = html;
+    }
+
+    function renderWaitingQueue() {
+        const waitingPlayers =
+            getAvailablePlayersSorted();
+
+        if (waitingPlayers.length === 0) {
+            document.getElementById(
+                "waitingQueue"
+            ).innerHTML = `
+                <p class="help">
+                    All available players are currently playing.
+                </p>
+            `;
+
+            return;
+        }
+
+        let html = "";
+
+        waitingPlayers.forEach(
+            (player, index) => {
+                html += `
+                    <div class="queue-item">
+
+                        <span class="queue-number">
+                            ${index + 1}.
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(player.name)}
+                        </strong>
+
+                        — Rating ${player.rating},
+                        ${player.scheduledGames}
+                        scheduled game(s)
+
+                    </div>
+                `;
+            }
+        );
+
+        document.getElementById(
+            "waitingQueue"
+        ).innerHTML = html;
     }
 
     function renderPlayerStatus() {
+        const highestGameCount =
+            Math.max(
+                ...eventState.players.map(
+                    player =>
+                        player.scheduledGames
+                )
+            );
+
         const sortedPlayers = [
             ...eventState.players
         ].sort((first, second) => {
@@ -1776,14 +2153,14 @@
 
         let html = `
             <table>
-
                 <thead>
                     <tr>
                         <th>Player</th>
                         <th>Rating</th>
-                        <th>Scheduled Games</th>
-                        <th>Completed Games</th>
-                        <th>Minimum Target</th>
+                        <th>Scheduled</th>
+                        <th>Completed</th>
+                        <th>Behind Leader</th>
+                        <th>Target</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -1799,9 +2176,12 @@
                 player.scheduledGames >=
                 eventState.settings.minimumGames;
 
+            const gamesBehind =
+                highestGameCount -
+                player.scheduledGames;
+
             html += `
                 <tr>
-
                     <td>
                         ${escapeHtml(player.name)}
                     </td>
@@ -1816,6 +2196,10 @@
 
                     <td>
                         ${player.completedGames}
+                    </td>
+
+                    <td>
+                        ${gamesBehind}
                     </td>
 
                     <td class="${
@@ -1834,10 +2218,9 @@
                         ${
                             player.active
                                 ? "Playing"
-                                : "Available"
+                                : "Waiting"
                         }
                     </td>
-
                 </tr>
             `;
         }
@@ -1852,17 +2235,14 @@
         ).innerHTML = html;
     }
 
-    function renderHistory() {
-        const history =
-            document.getElementById(
-                "history"
-            );
-
+    function renderMatchHistory() {
         if (
             eventState.completedMatches
                 .length === 0
         ) {
-            history.innerHTML = `
+            document.getElementById(
+                "matchHistory"
+            ).innerHTML = `
                 <p class="help">
                     No matches completed yet.
                 </p>
@@ -1881,14 +2261,14 @@
             const match
             of completedMatches
         ) {
-            const teamANames =
+            const teamA =
                 match.teamA
                     .map(player =>
                         escapeHtml(player.name)
                     )
                     .join(" + ");
 
-            const teamBNames =
+            const teamB =
                 match.teamB
                     .map(player =>
                         escapeHtml(player.name)
@@ -1900,32 +2280,157 @@
 
                     <strong>
                         Match ${match.matchNumber},
-                        Court ${match.courtNumber}:
+                        Court ${match.courtNumber}
                     </strong>
 
-                    ${teamANames}
+                    <br>
 
+                    ${teamA}
                     vs
+                    ${teamB}
 
-                    ${teamBNames}
+                    <br>
+
+                    <span class="small">
+                        Started:
+                        ${formatTime(match.startedAt)}
+
+                        |
+                        Completed:
+                        ${formatTime(match.completedAt)}
+                    </span>
 
                 </div>
             `;
         }
 
-        history.innerHTML = html;
+        document.getElementById(
+            "matchHistory"
+        ).innerHTML = html;
+    }
+
+    function getPlayerById(playerId) {
+        return eventState.players.find(
+            player =>
+                player.id ===
+                Number(playerId)
+        );
+    }
+
+    function renderHistoryMap(
+        map,
+        targetElementId,
+        separator
+    ) {
+        const records = [];
+
+        for (
+            const [key, count]
+            of map.entries()
+        ) {
+            const ids =
+                key.split("-")
+                    .map(Number);
+
+            const firstPlayer =
+                getPlayerById(ids[0]);
+
+            const secondPlayer =
+                getPlayerById(ids[1]);
+
+            if (
+                firstPlayer &&
+                secondPlayer
+            ) {
+                records.push({
+                    firstPlayer,
+                    secondPlayer,
+                    count
+                });
+            }
+        }
+
+        records.sort(
+            (first, second) =>
+                second.count -
+                first.count ||
+                first.firstPlayer.name
+                    .localeCompare(
+                        second.firstPlayer.name
+                    )
+        );
+
+        if (records.length === 0) {
+            document.getElementById(
+                targetElementId
+            ).innerHTML = `
+                <p class="help">
+                    No combinations recorded yet.
+                </p>
+            `;
+
+            return;
+        }
+
+        let html = "";
+
+        for (
+            const record
+            of records
+        ) {
+            html += `
+                <div class="pair-item">
+
+                    ${escapeHtml(
+                        record.firstPlayer.name
+                    )}
+
+                    ${separator}
+
+                    ${escapeHtml(
+                        record.secondPlayer.name
+                    )}
+
+                    <strong>
+                        × ${record.count}
+                    </strong>
+
+                </div>
+            `;
+        }
+
+        document.getElementById(
+            targetElementId
+        ).innerHTML = html;
+    }
+
+    function renderPairingHistory() {
+        renderHistoryMap(
+            eventState.partnerHistory,
+            "partnerHistoryDisplay",
+            "+"
+        );
+
+        renderHistoryMap(
+            eventState.opponentHistory,
+            "opponentHistoryDisplay",
+            "vs"
+        );
     }
 
     function renderEverything() {
+        renderProgress();
         renderCourts();
+        renderWaitingQueue();
         renderPlayerStatus();
-        renderHistory();
+        renderMatchHistory();
+        renderPairingHistory();
         updateEventStatus();
     }
 
     /*
-        Add eight blank player rows at startup.
-        More players can be added without a fixed limit.
+        Eight blank rows are displayed initially.
+        The organizer can add or remove rows freely.
     */
 
     for (
@@ -1938,5 +2443,4 @@
 </script>
 
 </body>
-
 </html>
